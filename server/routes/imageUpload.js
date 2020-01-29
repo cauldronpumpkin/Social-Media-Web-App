@@ -10,12 +10,13 @@ cloudinary.config({
 });
 
 router.post('/', (req, res, next) => {
-    cloudinary.uploader.upload(req.body.location, function(error, result) {
+    console.log(req.body)
+    cloudinary.uploader.upload(req.body.file, function(error, result) {
         if (!error) {
             console.log(error);
         }
         else {
-            console.log("Success!");
+            console.log(result);
         }
     }).catch(err => {
         console.log(err);
