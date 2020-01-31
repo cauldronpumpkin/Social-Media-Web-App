@@ -3,6 +3,8 @@
 # Tech Stack
 1) VueJS
 2) Vuex
-3) GraphQL
-4) Node.js
-5) Firebase Storage
+3) Vuetify
+4) GraphQL
+5) Node.js
+6) Firebase Storage
+7) MongoDB
