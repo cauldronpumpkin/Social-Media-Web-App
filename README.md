@@ -6,3 +6,4 @@
 3) GraphQL
 4) Node.js
 5) Firebase Storage
+6) MongoDB
