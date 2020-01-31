@@ -1,0 +1,10 @@
+query getPosts($username: String!) {
+    userPosts (username: $username) {
+        username
+        likes
+        dislikes
+        caption
+        link
+        postId
+    }
+}

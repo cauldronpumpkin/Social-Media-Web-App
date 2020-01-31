@@ -1,0 +1,5 @@
+mutation NewPost($username: String!, $caption: String!, $link: String!) {
+    addPost (username: $username, caption: $caption, link: $link) {
+        link
+    }
+}
