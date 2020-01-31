@@ -8,7 +8,9 @@ const postSchema = new Schema({
     dislikes   : Number,
     caption    : String,
     postId     : String,
-    date       : Date
+    date       : Date,
+    likedBy    : [String],
+    dislikedBy : [String] 
 });
 
 module.exports = mongoose.model('Post', postSchema);

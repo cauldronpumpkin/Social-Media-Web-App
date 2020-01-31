@@ -29,12 +29,14 @@ const UserType = new GraphQLObjectType({
 const PostType = new GraphQLObjectType({
     name: 'Post',
     fields: () => ({
-        username : { type: GraphQLString },
-        link     : { type: GraphQLString },
-        likes    : { type: GraphQLInt },
-        dislikes : { type: GraphQLInt },
-        caption  : { type: GraphQLString },
-        postId   : { type: GraphQLString }
+        username   : { type: GraphQLString },
+        link       : { type: GraphQLString },
+        likes      : { type: GraphQLInt },
+        dislikes   : { type: GraphQLInt },
+        caption    : { type: GraphQLString },
+        postId     : { type: GraphQLString },
+        likedBy    : { type: GraphQLList(GraphQLString) },
+        dislikedBy : { type: GraphQLList(GraphQLString) },
     })
 });
 
@@ -96,8 +98,8 @@ const Mutation = new GraphQLObjectType({
                     password : bcrypt.hashSync(args.password, 10, function (err) {
                         if (err) throw (err);
                     }),
-                    friends  : [],
-                    numberOfPosts: 0
+                    friends  : ["admin"],
+                    numberOfPosts: 0,
                 });
                 return user.save();
             }
@@ -117,6 +119,7 @@ const Mutation = new GraphQLObjectType({
                 var newpost = user[0].numberOfPosts + 1;
                 var condition = { 'username': args.username };
                 await User.updateOne(condition, { 'numberOfPosts': newpost});
+                newpost = newpost - 1;
                 var Id = user[0].username + '-' + newpost;
                 let post = new Post({
                     username  : args.username,
@@ -124,7 +127,9 @@ const Mutation = new GraphQLObjectType({
                     caption   : args.caption,
                     likes     : 0,
                     dislikes  : 0,
-                    postId    : Id
+                    postId    : Id,
+                    likedBy   : ['admin'],
+                    dislikedBy: ['admin']
                 });
                 return post.save();
             }
@@ -155,15 +160,13 @@ const Mutation = new GraphQLObjectType({
         likePost: {
             type: PostType,
             args: {
-                postId: { type: new GraphQLNonNull(GraphQLString)}
+                postId   : { type: new GraphQLNonNull(GraphQLString)},
+                username : { type: new GraphQLNonNull(GraphQLString)}
             },
             async resolve(parent, args, req) {
-                // if (!req.isAuth) {
-                //     throw new Error('Not Authenticated.');
-                // }
                 let post = await Post.findOne({'postId': args.postId});
                 let likes = post.likes + 1;
-                return Post.updateOne({'postId': args.postId}, {'likes': likes});
+                return Post.updateOne({'postId': args.postId}, {'likes': likes, $push: {likedBy: args.username}});
             }
         },
         dislikePost: {
@@ -172,38 +175,18 @@ const Mutation = new GraphQLObjectType({
                 postId: { type: new GraphQLNonNull(GraphQLString)}
             },
             async resolve(parent, args, req) {
-                if (!req.isAuth) {
-                    throw new Error('Not Authenticated.');
-                }
                 let post = await Post.findOne({'postId': args.postId});
                 let dislikes = post.dislikes + 1;
-                return Post.updateOne({'postId': args.postId}, {'dislikes': dislikes});
-            }
-        },
-        dislikePost: {
-            type: PostType,
-            args: {
-                postId: { type: new GraphQLNonNull(GraphQLString)}
-            },
-            async resolve(parent, args, req) {
-                if (!req.isAuth) {
-                    throw new Error('Not Authenticated.');
-                }
-                let post = await Post.findOne({'postId': args.postId});
-                let dislikes = post.dislikes + 1;
-                return Post.updateOne({'postId': args.postId}, {'dislikes': dislikes});
+                return Post.updateOne({'postId': args.postId}, {'dislikes': dislikes,  $push: {dislikedBy: args.username}});
             }
         },
         deletePost: {
             type: PostType,
             args: {
-                postId: { type: new GraphQLNonNull(GraphQLString)}
+                postId: { type: new GraphQLNonNull(GraphQLString) }
             },
             async resolve(parent, args, req) {
-                if (!req.isAuth) {
-                    throw new Error('Not Authenticated.');
-                }
-                return Post.deleteOne({'postId': args.postId}, {'dislikes': dislikes});
+                return Post.deleteOne({'postId': args.postId});
             }
         }
     }

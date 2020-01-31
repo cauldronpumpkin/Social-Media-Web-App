@@ -56,7 +56,6 @@
                   <v-text-field
                     v-model="credentials.password"
                     prepend-icon="lock" 
-                    type="password"
                     :counter="20"
                     label="Password"
                     :rules="rules.password"
@@ -95,7 +94,7 @@ export default {
           username: [
             v => !!v || "Username is required",
             v => (v && v.length > 3) || "A username must be more than 3 characters long",
-            v => /^[a-z0-9_]+$/.test(v) || "A username can only contain letters and digits"
+            v => /^[a-z A-Z 0-9_]+$/.test(v) || "A username can only contain letters and digits"
           ],
           password: [
             v => !!v || "Password is required",
@@ -115,8 +114,11 @@ export default {
                       password: this.credentials.password
                   }
               }).then((res) => {
-                  sessionStorage.setItem('username', res.data.addUser.username);
+                  sessionStorage.setItem('loggedUser', res.data.addUser.username);
                   router.push('/login');
+              })
+              .catch(e => {
+                console.log(e);
               })
           
         }

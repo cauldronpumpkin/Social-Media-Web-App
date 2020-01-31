@@ -1,14 +1,42 @@
 <template>
     <div> <br><br><br><br><br>
+        <v-card class="profileCard">
+            <v-img height="100%" src="https://ubikes.com/wp-content/uploads/websitebg-bl_compr1_2.png">
+      <v-row align="end" class="fill-height">
+        <v-col align-self="start" class="pa-0" cols="12">
+            <v-file-input id="avatar" style="width: 0px; margin-top: -25px;" prepend-icon="mdi-camera" v-on:change="changeAvatar()"/>
+          <v-avatar class="profile" color="grey" size="164" >
+            <v-img :src="avatar" id="avatarImg" rounded/>
+          </v-avatar>
+        </v-col>
+        <v-col class="py-0">
+          <v-list-item color="rgba(0, 0, 0, .4)" dark>
+            <v-list-item-content>
+              <v-list-item-title class="title">{{ name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ email }}</v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </v-col>
+      </v-row>
+    </v-img>
+    <v-dialog v-model="avatarDialog" id="abc" max-width="490" hide-overlay persistent>
+        <v-card>
+            <v-card-title>
+                Please Wait
+            </v-card-title>
+        </v-card>
+    </v-dialog>
+        </v-card>
+         <br><br><br><br><br><br>   
         <v-row class="postRow">
             <v-col v-for="post in listOfPosts" :key="post.postId" class="column" cols="3">
-             <img src="../images/sh.jpg" class="postImage" v-on:click="selectPost(post)"/>
+             <img alt="Loading Image" class="postImage" v-on:click="selectPost(post)"/>
             </v-col>
         </v-row>
     <v-row justify="center">
     <v-dialog v-model="dialog" fullscreen hide-overlay transition="dialog-bottom-transition" id="abc">
       <v-card>
-        <v-toolbar color="primary" style="background-color: teal;">
+        <v-toolbar color="primary" style="background-color: #00acee;">
           <v-btn icon dark @click="dialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
@@ -16,23 +44,26 @@
           <v-spacer></v-spacer>
         </v-toolbar>
         <div style="margin-left: 1720px; margin-top: 10px;">
-            <v-btn dark v-on:click="deletePost()"> Delete This Post </v-btn>
+            <v-btn dark v-on:click="deletePost()" :loading="loading"> Delete This Post </v-btn>
         </div>
         <v-card class="innerCard" justify="center">
-            <v-img :src="url" id="selectedPost"/>
+            <v-img :src="url" id="selectedPostImage" v-on:dblclick="likePost"/>
             <div style="margin-left: 30px; width: 100px; margin-top: 10px;">
-                <div class="row"> 
+                <div class="row">
                     <div>
-                        <v-btn icon large v-on:click="likePost()" style="margin-right: 20px;">
-                            <v-icon large>thumb_up</v-icon>
-                        </v-btn>
-                        <h2> {{ selectedPost.likes }} </h2>
+                        <pre style="font-family: sans;"><b>{{ selectedPost.username }}:</b> {{ selectedPost.caption }}</pre>
                     </div>
                     <div>
-                        <v-btn icon large v-on:click="dislikePost()">
+                        <v-btn icon large v-on:click="likePost()" style="margin-right: 20px;" :disabled="liked">
+                            <v-icon large>thumb_up</v-icon>
+                        </v-btn>
+                        <h5> {{ selectedPost.likes }} Likes </h5>
+                    </div>
+                    <div>
+                        <v-btn icon large v-on:click="dislikePost()" :disabled="disliked">
                             <v-icon large>thumb_down</v-icon>
                         </v-btn>
-                        <h2> {{ selectedPost.dislikes }} </h2>
+                        <h5> {{ selectedPost.dislikes }} Dislikes </h5>
                     </div>
                 </div>
             </div>
@@ -52,10 +83,30 @@ export default {
         width: 300,
         dialog: false,
         url: "",
-        loading: false
+        loading: false,
+        avatar: "",
+        email: "",
+        name: "", 
+        avatarDialog: false
     }),
+    created() {
+        this.$apollo.query({
+            query: require('../graphql/getUser.gql'),
+            variables: {
+                username: localStorage.getItem('loggedUser')
+            }
+        }).then(res => {
+            this.email = res.data.user.email;
+            this.name = res.data.user.name;
+        })
+    },
     async mounted() {
         var username = localStorage.getItem('loggedUser');
+        var r = fire.ref(`profile/${username}`);
+        r.getDownloadURL().then(url => {
+            // document.getElementById("avatarImg").src = url;
+            this.avatar = url;
+        })
         var res = await this.$apollo.query({
         query: require('../graphql/getPosts.gql'),
         variables: {
@@ -69,7 +120,6 @@ export default {
                 let url = await ref.getDownloadURL();
                 this.listOfPosts[i].img = url;
         }
-        console.log(this.listOfPosts)
         let img = document.getElementsByClassName("postImage");
         for (let i = 0; i < this.listOfPosts.length; i++) {
             img[i].src = this.listOfPosts[i].img; 
@@ -78,6 +128,12 @@ export default {
     computed: {
         selectedPost() {
             return this.$store.getters.selectedPost;
+        },
+        liked() {
+            return this.$store.getters.liked;
+        },
+        disliked() {
+            return this.$store.getters.disliked;
         }
     },
     methods: {
@@ -99,40 +155,81 @@ export default {
                 }
             })
         },
+        async changeAvatar() {
+            this.avatarDialog = true;
+            var file = event.target.files[0];
+            var loggedUser = localStorage.getItem('loggedUser');
+            await fire.ref(`profile/${loggedUser}`).put(file);
+            location.reload();
+        },
         selectPost(post) {
             this.$store.dispatch('selectPost', post);
+            let loggedUser = localStorage.getItem('loggedUser');
+            var boolLiked = post.likedBy.includes(loggedUser);
+            var boolDisliked = post.dislikedBy.includes(loggedUser);
+            this.$store.dispatch('likedPost', boolLiked);
+            this.$store.dispatch('dislikedPost', boolDisliked);
             this.url = post.img;
+            var img = new Image();
+            img.src = post.img;
+            img.onload = function() 
+            {
+                let width = this.naturalWidth;
+                let height = this.naturalHeight;
+                if (width > 800) {
+                    width = width/2;
+                }
+                if (height > 700) {
+                    height = height/2.2;
+                }
+                document.getElementById('selectedPostImage').style.width = width + 'px';
+                document.getElementsByClassName('innerCard')[0].style.width = width + 'px';
+                document.getElementsByClassName('innerCard')[0].style.height = `${height+100}px`;
+                document.getElementById('selectedPostImage').style.height = height + 'px';       
+            }
             this.dialog = true;
         },
-        likePost() {
-            this.selectedPost.likes++;
-            this.$store.dispatch('selectPost', this.selectPost);
+        async likePost() {
+            this.liked = true;
+            this.selectedPost.likes += 1;
+            this.$store.dispatch('likedPost', true);
+            for (var i = 0; i < this.listOfPosts.length; i++) {
+                if (this.selectedPost.postId == this.listOfPosts[i].postId) {
+                    var index = i;
+                    break;
+                }
+            }
+            this.listOfPosts[index].likedBy.push(localStorage.getItem('loggedUser'));
             this.$apollo.mutate({
                 mutation: require('../graphql/likePost.gql'),
                 variables: {
-                    postId: this.selectedPost.postId,
+                    postId   : this.selectedPost.postId,
+                    username : localStorage.getItem('loggedUser')
                 }
-            }).then(() => {
-                this.getPosts();
             })
         },
         dislikePost() {
-            this.selectedPost.dislikes++;
-            this.$store.dispatch('selectPost', this.selectPost);
+            this.disliked = true;
+            this.selectedPost.dislikes += 1
+            this.$store.dispatch('dislikedPost', true);
+            for (var i = 0; i < this.listOfPosts.length; i++) {
+                if (this.selectedPost.postId == this.listOfPosts[i].postId) {
+                    var index = i;
+                    break;
+                }
+            }
+            this.listOfPosts[index].dislikedBy.push(localStorage.getItem('loggedUser'));
             this.$apollo.mutate({
                 mutation: require('../graphql/dislikePost.gql'),
                 variables: {
                     postId: this.selectedPost.postId,
+                    username : localStorage.getItem('loggedUser')
                 }
-            }).then(() => {
-                this.getPosts();
             })
         },
         async deletePost() {
             this.loading = true;
-            console.log("kabs")
             await fire.ref(this.selectedPost.link).delete();
-            console.log("aibgdcy")
             this.$apollo.mutate({
                 mutation: require('../graphql/deletePost.gql'),
                 variables: {
@@ -142,8 +239,9 @@ export default {
                 this.loading = false;
                 this.dialog = false;
                 this.getPosts();
+                location.reload();
             })
-        }
+        },
     }
 
 }
@@ -171,13 +269,12 @@ export default {
         display: unset; 
     }
     .innerCard {
-        width: 600px;
-        height: 800px;
         margin-left: 600px;
-        margin-top: 50px;
+        margin-top: 0px;
     }
-    #selectedPost {
-        width: 600px;
-        height: 600px;
+    .profileCard {
+        width: 700px;
+        margin-left: 600px;
+        height: 300px;
     }
 </style>

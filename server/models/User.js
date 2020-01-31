@@ -7,8 +7,7 @@ const userSchema = new Schema({
     email           : { type: String, unique: true },
     password        : String,
     friends         : [String],
-    numberOfPosts   : Number
-
-});
+    numberOfPosts   : Number,
+}); 
 
 module.exports = mongoose.model('User', userSchema);

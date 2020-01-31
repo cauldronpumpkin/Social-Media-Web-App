@@ -1,7 +1,7 @@
 <template>
   <div class="about">
-    <v-card class="postCard">
-      <v-card-title> Make a New Post</v-card-title>
+    <v-card class="postCard" >
+      <v-toolbar color="#00acee"><v-card-title> Make a New Post</v-card-title></v-toolbar>
       <center>
         <img id="uploadPreview" style="width: 0px; height: 0px;" /> <br><br>
         <input type="file" id="uploadImage" @change="changeFile()"> <br><br><br>
@@ -56,7 +56,6 @@ export default {
       img.onload = function() {
         document.getElementById("uploadPreview").style.width = `${this.naturalWidth/2}px`;
         document.getElementById("uploadPreview").style.height = `${this.naturalHeight/2}px`;
-
       };
       var loggedUser = localStorage.getItem('loggedUser');
       this.path = 'posts/' + loggedUser + '-' + this.numberOfPosts + '.jpg'; 
@@ -90,7 +89,7 @@ export default {
 
 <style scoped>
   .postCard {
-    margin-top: 10px;
+    margin-top: 40px;
     margin-left: 450px;
     width: 1100px;
     font-family: sans;

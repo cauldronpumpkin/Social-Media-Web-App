@@ -6,29 +6,44 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     selectedPost: {
-      username: "ishu1201",
       likes: 0,
-      dislikes: 0,
-      caption: "HOTTEST GIRL EVER !!!!!!!!",
-      link: "posts/ishu1201-2.jpg",
-      postId: "ishu1201-3",
-      img: "https://firebasestorage.googleapis.com/v0/b/social-media-d825a.appspot.com/o/posts%2Fishu1201-2.jpg?alt=media&token=b5641e6f-36c7-4778-af25-778c40209ec0"
+      dislikes: 0
     },
+    liked: false,
+    disliked: false
   },
   getters: {
     selectedPost(state) {
       return state.selectedPost;
+    },
+    liked(state) {
+      return state.liked;
+    },
+    disliked(state) {
+      return state.disliked;
     }
   },
   mutations: {
     SET_POST(state, post) {
       state.selectedPost = post;
+    },
+    LIKED_POST(state, boolLiked) {
+      state.liked = boolLiked;
+    },
+    DISLIKED_POST(state, boolDisliked) {
+      state.disliked = boolDisliked;
     }
   },
   actions: {
     selectPost({commit}, post) {
       commit("SET_POST", post);
-    }
+    },
+    likedPost({commit}, boolLiked) {
+      commit("LIKED_POST", boolLiked);
+    },
+    dislikedPost({commit}, boolDisliked) {
+      commit("DISLIKED_POST", boolDisliked);
+    },
   },
   modules: {
   }

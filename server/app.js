@@ -20,7 +20,7 @@ app.use(bodyParser.json())
 // Middlewares
 const cors = require('cors');
 const corsOptions = {
-    origin: 'http://localhost:8081'
+    origin: 'http://localhost:8080'
 }
 app.use(cors(corsOptions));
 app.use(auth);

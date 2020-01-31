@@ -1,5 +1,5 @@
-mutation Dislike($postId: String!) {
-    dislikePost(postId: $postId) {
+mutation Disike($postId: String!, $username: String!) {
+    dislikePost(postId: $postId, username: $username) {
         dislikes
     }
 }

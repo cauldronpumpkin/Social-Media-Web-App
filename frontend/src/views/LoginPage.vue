@@ -105,7 +105,8 @@ export default {
                   localStorage.setItem('apollo-token', token);
                   localStorage.setItem('loggedUser', username);
                   router.push('/');
-              }).catch(e => {
+              })
+              .catch(e => {
                 console.log(e);
               })
           }
