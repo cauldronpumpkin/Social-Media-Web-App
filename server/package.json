@@ -17,6 +17,9 @@
     "express-graphql": "^0.9.0",
     "graphql": "^14.6.0",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.8.10"
+    "mongoose": "^5.8.10",
+    "graphql-server-express": "^1.0.0",
+    "graphql-subscriptions": "^0.4.4",
+    "subscriptions-transport-ws": "^0.9.16"
   }
 }

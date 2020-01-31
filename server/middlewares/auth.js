@@ -3,14 +3,12 @@ let SECRET = "socialmediawebappproject";
 module.exports = (req, res, next) => {
     
     const authHeaders = req.get('authorization');
-    
     if (!authHeaders) {
         req.isAuth = false;
         return next();
     }
 
     const token = authHeaders.split(' ')[1];
-
     if (!token || token === '') {
         req.isAuth = false;
         return next();

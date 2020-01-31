@@ -2,10 +2,11 @@ const express     = require('express');
 const graphqlHTTP = require('express-graphql');
 const schema      = require('./schema/schema')
 const mongoose    = require('mongoose');
-const jwt         = require('jsonwebtoken');
-const cloudinary  = require('cloudinary').v2;
 const auth        = require('./middlewares/auth');
 const bodyParser  = require('body-parser');
+const http = require('http')
+const { subscribe, execute } = require('graphql')
+const { SubscriptionServer } = require('subscriptions-transport-ws')
 
 // Express App
 const app = express();
@@ -19,7 +20,7 @@ app.use(bodyParser.json())
 // Middlewares
 const cors = require('cors');
 const corsOptions = {
-    origin: 'http://localhost:8080'
+    origin: 'http://localhost:8081'
 }
 app.use(cors(corsOptions));
 app.use(auth);
@@ -37,9 +38,18 @@ app.use('/graphql', graphqlHTTP(({
     graphiql: true,
 })));
 
-app.use('/image', imageApi);
-
 // Server
-app.listen(4000, () => {
-    console.log("Listensing to port 4000");
+const server = http.createServer(app);
+server.listen(4000, () => {
+    new SubscriptionServer(
+      {
+        execute,
+        subscribe,
+        schema,
+      },
+      {
+        server,
+        path: '/subscriptions',
+      },
+    );
 })
