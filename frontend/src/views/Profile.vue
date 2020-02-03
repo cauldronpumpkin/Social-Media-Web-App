@@ -1,10 +1,12 @@
 <template>
-    <div> <br><br><br><br><br>
+    <div> <br><br>
+    <v-btn v-on:click="sendFriendRequest()" :loading="requestLoading" 
+        style="background-color: #00acee; margin-left: 1650px;" v-if="requestButton" text>Send Friend Request</v-btn>
+    <br><br><br>
         <v-card class="profileCard">
             <v-img height="100%" src="https://ubikes.com/wp-content/uploads/websitebg-bl_compr1_2.png">
       <v-row align="end" class="fill-height">
         <v-col align-self="start" class="pa-0" cols="12">
-            <v-file-input id="avatar" style="width: 0px; margin-top: -25px;" prepend-icon="mdi-camera" v-on:change="changeAvatar()"/>
           <v-avatar class="profile" color="grey" size="164" >
             <v-img :src="avatar" id="avatarImg" rounded/>
           </v-avatar>
@@ -27,14 +29,12 @@
         </v-card>
     </v-dialog>
         </v-card>
-         <br><br><br><br><br><br>
-         <h3 style="font-family: sans; margin-left: 600px">Posts by User  :</h3>
+         <br><br><br><br><br><br>   
         <v-row class="postRow">
             <v-col v-for="post in listOfPosts" :key="post.postId" class="column" cols="3">
              <img alt="Loading Image" class="postImage" v-on:click="selectPost(post)"/>
             </v-col>
         </v-row>
-        <br>
     <v-row justify="center">
     <v-dialog v-model="dialog" fullscreen hide-overlay transition="dialog-bottom-transition" id="abc">
       <v-card>
@@ -44,10 +44,7 @@
           </v-btn>
           <v-toolbar-title style="font-size: 25px; font-family: sans;">Post</v-toolbar-title>
           <v-spacer></v-spacer>
-        </v-toolbar>
-        <div style="margin-left: 1720px; margin-top: 10px;">
-            <v-btn dark v-on:click="deletePost()" :loading="loading"> Delete This Post </v-btn>
-        </div>
+        </v-toolbar><br><br>
         <v-card class="innerCard" justify="center">
             <v-img :src="url" id="selectedPostImage" v-on:dblclick="likePost"/>
             <div style="margin-left: 30px; width: 100px; margin-top: 10px;">
@@ -78,7 +75,6 @@
 
 <script>
 import fire from '../firebase/index';
-import router from '../router';
 
 export default {
     data: () => ({
@@ -87,27 +83,31 @@ export default {
         dialog: false,
         url: "",
         loading: false,
+        requestLoading: false,
+        requestButton: true,
+        friends: [],
         avatar: "",
         email: "",
         name: "", 
         avatarDialog: false
     }),
     created() {
-        if(!localStorage.getItem('apollo-token')) {
-            router.push('/login');
+        if (localStorage.getItem('loggedUser') == sessionStorage.getItem('reqUser')) {
+            this.requestButton = false;
         }
         this.$apollo.query({
             query: require('../graphql/getUser.gql'),
             variables: {
-                username: localStorage.getItem('loggedUser')
+                username: sessionStorage.getItem('reqUser')
             }
         }).then(res => {
             this.email = res.data.user.email;
             this.name = res.data.user.name;
+            this.friends = res.data.user.friends;
         })
     },
     async mounted() {
-        var username = localStorage.getItem('loggedUser');
+        var username = sessionStorage.getItem('reqUser');
         var r = fire.ref(`profile/${username}`);
         r.getDownloadURL().then(url => {
             this.avatar = url;
@@ -144,7 +144,7 @@ export default {
     },
     methods: {
         getPosts() {
-            var username = localStorage.getItem('loggedUser');
+            var username = sessionStorage.getItem('reqUser');
             this.$apollo.query({
             query: require('../graphql/getPosts.gql'),
             variables: {
@@ -161,12 +161,26 @@ export default {
                 }
             })
         },
-        async changeAvatar() {
-            this.avatarDialog = true;
-            var file = event.target.files[0];
-            var loggedUser = localStorage.getItem('loggedUser');
-            await fire.ref(`profile/${loggedUser}`).put(file);
-            location.reload();
+        sendFriendRequest() {
+            this.requestLoading = true;
+            // var bool = this.friends.include(localStorage.getItem('loggedUser'));
+            var bool = false;
+            if (bool) {
+                console.log("Already Friends !");
+            }
+            else {  
+                var id = localStorage.getItem('loggedUser') + sessionStorage.getItem('reqUser');  
+                this.$apollo.mutate({
+                    mutation: require('../graphql/sendRequest.gql'),
+                    variables: {
+                        toUser     : sessionStorage.getItem('reqUser'),
+                        fromUser   : localStorage.getItem('loggedUser'),
+                        requestId  : id 
+                    }
+                }).then(() => {
+                    this.requestLoading = false;
+                })
+            }
         },
         selectPost(post) {
             this.$store.dispatch('selectPost', post);
@@ -231,21 +245,6 @@ export default {
                     postId: this.selectedPost.postId,
                     username : localStorage.getItem('loggedUser')
                 }
-            })
-        },
-        async deletePost() {
-            this.loading = true;
-            await fire.ref(this.selectedPost.link).delete();
-            this.$apollo.mutate({
-                mutation: require('../graphql/deletePost.gql'),
-                variables: {
-                    postId: this.selectedPost.postId
-                }
-            }).then(() => {
-                this.loading = false;
-                this.dialog = false;
-                this.getPosts();
-                location.reload();
             })
         },
     }

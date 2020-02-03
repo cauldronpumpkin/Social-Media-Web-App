@@ -1,0 +1,5 @@
+mutation ($toUser: String!, $fromUser: String!, $requestId: String!) {
+  sendFriendRequest(toUser: $toUser, fromUser: $fromUser, requestId: $requestId) {
+    toUser
+  }
+}

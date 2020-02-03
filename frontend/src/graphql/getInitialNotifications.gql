@@ -1,0 +1,18 @@
+query ($username: String) {
+    getNotifications(username: $username) {
+        toUser
+        fromUser
+        time
+        done
+        requestId
+        toUserObj {
+            name
+            email
+        }
+        fromUserObj {
+            username
+            name
+            email
+        }
+    }
+}

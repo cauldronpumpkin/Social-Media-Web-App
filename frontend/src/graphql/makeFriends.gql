@@ -1,0 +1,5 @@
+mutation ($userOne: String!, $userSecond: String!) {
+    makeFriends(userOne: $userOne, userSecond: $userSecond) {
+        username
+    }
+}

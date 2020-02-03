@@ -10,7 +10,8 @@ export default new Vuex.Store({
       dislikes: 0
     },
     liked: false,
-    disliked: false
+    disliked: false,
+    listOfPosts: {}
   },
   getters: {
     selectedPost(state) {
@@ -21,6 +22,9 @@ export default new Vuex.Store({
     },
     disliked(state) {
       return state.disliked;
+    },
+    listOfPosts(state) {
+      return state.listOfPosts;
     }
   },
   mutations: {
@@ -32,6 +36,9 @@ export default new Vuex.Store({
     },
     DISLIKED_POST(state, boolDisliked) {
       state.disliked = boolDisliked;
+    },
+    LIST_POST(state, listOfPosts) {
+      state.listOfPosts = listOfPosts;
     }
   },
   actions: {
@@ -44,6 +51,9 @@ export default new Vuex.Store({
     dislikedPost({commit}, boolDisliked) {
       commit("DISLIKED_POST", boolDisliked);
     },
+    listOfPosts({commit}, listOfPosts) {
+      commit("LIST_POST", listOfPosts);
+    }
   },
   modules: {
   }

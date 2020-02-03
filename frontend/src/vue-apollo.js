@@ -1,7 +1,11 @@
 import Vue from 'vue'
 import VueApollo from 'vue-apollo'
 import { createApolloClient, restartWebsockets } from 'vue-cli-plugin-apollo/graphql-client'
-
+// import { addGraphQLSubscriptions } from 'subscriptions-transport-ws'
+import { WebSocketLink } from 'apollo-link-ws';
+import { HttpLink } from 'apollo-link-http';
+import { getMainDefinition } from 'apollo-utilities';
+import { split } from 'apollo-link';
 // Install the vue plugin
 Vue.use(VueApollo)
 
@@ -9,11 +13,39 @@ Vue.use(VueApollo)
 const AUTH_TOKEN = 'apollo-token'
 
 // Http endpoint
-const httpEndpoint = process.env.VUE_APP_GRAPHQL_HTTP || 'http://localhost:4000/graphql'
-// Files URL root
-export const filesRoot = process.env.VUE_APP_FILES_ROOT || httpEndpoint.substr(0, httpEndpoint.indexOf('/graphql'))
+// const httpEndpoint = process.env.VUE_APP_GRAPHQL_HTTP || 'http://localhost:4000/graphql';
 
-Vue.prototype.$filesRoot = filesRoot
+const httpEndpoint = new HttpLink({
+  uri: 'http://localhost:4000/graphql'
+});
+
+const wsClient = new WebSocketLink({
+  uri: 'ws://localhost:4000/subscriptions',
+  options: {
+    reconnect: true
+  }
+});
+
+const link = split(
+  // split based on operation type
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsClient,
+  httpEndpoint,
+);
+
+// const httpLinkWithSubscriptions = addGraphQLSubscriptions(
+//   wsClient
+// )
+// Files URL root
+// export const filesRoot = process.env.VUE_APP_FILES_ROOT || httpEndpoint.substr(0, httpEndpoint.indexOf('/graphql'))
+
+// Vue.prototype.$filesRoot = filesRoot
 
 // Config
 const defaultOptions = {
@@ -32,11 +64,12 @@ const defaultOptions = {
   websocketsOnly: false,
   // Is being rendered on the server?
   ssr: false,
+  // httpLinkWithSubscriptions: httpLinkWithSubscriptions,
 
   // Override default apollo link
   // note: don't override httpLink here, specify httpLink options in the
   // httpLinkOptions property of defaultOptions.
-  // link: myLink
+  link: link,
 
   // Override default cache
   // cache: myCache

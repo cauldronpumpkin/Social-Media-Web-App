@@ -2,10 +2,17 @@ const graphql = require('graphql');
 const _ = require('lodash');
 const Post = require('../models/Post');
 const User = require('../models/User');
+const FriendRequest = require('../models/FriendRequest');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET = "socialmediawebappproject";
-const { GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID, GraphQLInt, GraphQLList, GraphQLNonNull } = graphql;
+const { GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLBoolean } = graphql;
+const { GraphQLDateTime } = require('graphql-iso-date');
+const { PubSub } = require('apollo-server');
+const pubsub = new PubSub();
+const { withFilter } = require('graphql-subscriptions');
+const { subscribe } = require('graphql/subscription');
+
 
 // GraphQL Types
 const UserType = new GraphQLObjectType({
@@ -40,14 +47,28 @@ const PostType = new GraphQLObjectType({
     })
 });
 
-// const FriendRequestNotificationType = new GraphQLObjectType({
-//     name: 'Firend Request',
-//     fields: () => ({
-//         toUser: {
-//             type: 
-//         }
-//     })
-// })
+const FriendRequestNotificationType = new GraphQLObjectType({
+    name: 'FriendRequestNotificationType',
+    fields: () => ({
+        toUser     : { type: GraphQLString },
+        fromUser   : { type: GraphQLString },
+        time       : { type: GraphQLDateTime },
+        done       : { type: GraphQLBoolean },
+        requestId  : { type: GraphQLString },
+        toUserObj  : {
+            type: UserType,
+            resolve(parent) {
+                return User.findOne({'username': parent.toUser})
+            }
+        },
+        fromUserObj: {
+            type: UserType,
+            resolve(parent) {
+                return User.findOne({'username': parent.fromUser})
+            }
+        }
+    })
+})
 
 const TokenType = new GraphQLObjectType({
     name: 'Token',
@@ -60,6 +81,13 @@ const TokenType = new GraphQLObjectType({
 // Root Query
 const RootQuery = new GraphQLObjectType({
     name: 'RootQueryType',
+    // options: { fetchPolicy: "network-only" },
+    defaultOptions: {
+        watchQuery: {
+          fetchPolicy: 'network-only',
+          errorPolicy: 'all',
+        },
+      },
     fields: () => ({
         user: {
             type: UserType,
@@ -73,6 +101,22 @@ const RootQuery = new GraphQLObjectType({
             args: { username: { type: GraphQLString } },
             resolve (parent, args) {
                 return Post.find({ username: args.username });
+            }
+        },
+        allUsers: {
+            type: new GraphQLList(UserType),
+            resolve(parent, args) {
+                return User.find({});
+            }
+        },
+        getNotifications: {
+            type: new GraphQLList(FriendRequestNotificationType),
+            args: { username: { type: GraphQLString }},
+            resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
+                return FriendRequest.find({'toUser': args.username});
             }
         }
     })
@@ -188,31 +232,82 @@ const Mutation = new GraphQLObjectType({
             async resolve(parent, args, req) {
                 return Post.deleteOne({'postId': args.postId});
             }
+        },
+        sendFriendRequest: {
+            type: FriendRequestNotificationType,
+            args: {
+                toUser    : { type: GraphQLString },
+                fromUser  : { type: GraphQLString },
+                requestId : { type: GraphQLString }
+            },
+            async resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
+                let notification = new FriendRequest({
+                    toUser    : args.toUser,
+                    fromUser  : args.fromUser,
+                    done      : false,
+                    requestId : args.requestId,
+                    time      : new Date(),
+                });
+                let payload = await notification.save();
+                await pubsub.publish('NOTIFICATION', {
+                    payload,
+                });
+                return payload;
+            }
+        },
+        requestDone: {
+            type: FriendRequestNotificationType,
+            args: {
+                requestId: { type: GraphQLString }
+            },
+            async resolve(parent, args, req) {
+                let payload = await FriendRequest.updateOne({'requestId': args.requestId}, {'done': true});
+                return payload;
+            }
+        },
+        makeFriends: {
+            type: new GraphQLList(UserType),
+            args: {
+                userOne    : { type: GraphQLString },
+                userSecond : { type: GraphQLString },
+            },
+            async resolve(parent, args) {
+                let user1 = await User.updateOne({'username': args.userOne}, { $push: {friends: args.userSecond}});
+                let user2 = await User.updateOne({'username': args.userSecond}, { $push: {friends: args.userOne}});
+                let list = [user1, user2];
+                return list;
+            }
         }
     }
 });
 
-// const Subscription = {
-//     name: 'Subscribe',
-//     fields: {
-//         notifications: {
-//             type: FriendRequestNotificationType,
-//             args: {
-//                 username: { type: new GraphQLNonNull(GraphQLString) },
-//             },
-//             resolve(parent, args, req) {
-//                 if (!req.isAuth) {
-//                     throw new Error('Not Authenticated.');
-//                 }
-
-//             }
-//         }
-//     }
-// }
+const Subscription = new GraphQLObjectType({
+    name: 'Subscribe',
+    fields: {
+        FriendRequestNotification: {
+            type: FriendRequestNotificationType,
+            args: {
+                username: { type: new GraphQLNonNull(GraphQLString) },
+            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator('NOTIFICATION'),
+                (payload, args) => {
+                  return (payload.payload.toUser == args.username);
+                }
+            ),
+            async resolve(note, args) {
+                return note.payload;
+            }
+        }
+    }
+})
 
 // Exporting Query and Mutations
 module.exports = new GraphQLSchema({
     query    : RootQuery,
     mutation : Mutation,
-    // subscription: Subscription
+    subscription: Subscription
 });

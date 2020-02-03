@@ -1,0 +1,5 @@
+mutation ($requestId: String!) {
+    requestDone(requestId: $requestId) {
+        done
+    }
+}

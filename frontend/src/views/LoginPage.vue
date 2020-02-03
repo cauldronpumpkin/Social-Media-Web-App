@@ -15,7 +15,7 @@
         >
           <v-card class="elevation-12" style="margin-left: 650px; width: 500px; margin-top: 100px;">
             <v-toolbar 
-              style="background-color: teal;" 
+              style="background-color: #00acee;" 
             >
               <v-toolbar-title style="font-family: sans; color: white;">Login To Your Account</v-toolbar-title>
               <v-spacer />

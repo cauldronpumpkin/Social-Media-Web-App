@@ -4,8 +4,9 @@ const Schema = mongoose.Schema;
 const friendSchema = new Schema({
     toUser   : String,
     fromUser : String,
-    time     : ,
-   
+    done     : Boolean,
+    requestId: String,
+    time     : Date,
 });
 
-module.exports = mongoose.model('Post', postSchema);
+module.exports = mongoose.model('FriendRequest', friendSchema);

@@ -13,7 +13,12 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faUserSecret } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faFontAwesome } from '@fortawesome/free-brands-svg-icons'
- 
+import vSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css';
+// import { ApolloClient } from 'apollo-client';
+// import { InMemoryCache } from 'apollo-cache-inmemory';
+
+Vue.component('v-select', vSelect)
 library.add(faUserSecret)
 library.add(faFontAwesome)
  
@@ -24,7 +29,8 @@ Vue.use(VueSession);
 Vue.use(Vuetify);
 
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
+
 const base = axios.create({
   baseURL: 'http://localhost:8000'
 })

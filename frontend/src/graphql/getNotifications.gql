@@ -1,0 +1,18 @@
+subscription ($username: String!) {
+  FriendRequestNotification(username: $username) {
+    toUser
+    fromUser
+    time
+    done
+    requestId
+    toUserObj {
+      name
+      email
+    }
+    fromUserObj {
+      username
+      name
+      email
+    }
+  }
+}

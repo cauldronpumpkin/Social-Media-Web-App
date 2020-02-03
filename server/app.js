@@ -6,7 +6,9 @@ const auth        = require('./middlewares/auth');
 const bodyParser  = require('body-parser');
 const http = require('http')
 const { subscribe, execute } = require('graphql')
-const { SubscriptionServer } = require('subscriptions-transport-ws')
+const { SubscriptionServer } = require('subscriptions-transport-ws');
+const expressPlayground = require('graphql-playground-middleware-express')
+  .default
 
 // Express App
 const app = express();
@@ -38,18 +40,21 @@ app.use('/graphql', graphqlHTTP(({
     graphiql: true,
 })));
 
-// Server
+app.get('/playground', expressPlayground({ endpoint: '/graphql', subscriptionsEndpoint: 'ws://localhost:4000/subscriptions' }))
+
 const server = http.createServer(app);
+// Server
 server.listen(4000, () => {
     new SubscriptionServer(
       {
         execute,
         subscribe,
-        schema,
+        schema: schema,
       },
       {
-        server,
+        server: server,
         path: '/subscriptions',
       },
     );
+    console.log("Listenting")
 })
