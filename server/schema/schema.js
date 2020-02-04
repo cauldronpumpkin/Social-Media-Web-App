@@ -114,6 +114,9 @@ const RootQuery = new GraphQLObjectType({
             type: new GraphQLList(NotificationType),
             args: { username: { type: GraphQLString }},
             resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 return FriendRequest.find({'toUser': args.username});
             }
         }
@@ -211,6 +214,9 @@ const Mutation = new GraphQLObjectType({
                 username : { type: new GraphQLNonNull(GraphQLString)}
             },
             async resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 let post = await Post.findOne({'postId': args.postId});
                 let likes = post.likes + 1;
                 return Post.updateOne({'postId': args.postId}, {'likes': likes, $push: {likedBy: args.username}});
@@ -222,6 +228,9 @@ const Mutation = new GraphQLObjectType({
                 postId: { type: new GraphQLNonNull(GraphQLString)}
             },
             async resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 let post = await Post.findOne({'postId': args.postId});
                 let dislikes = post.dislikes + 1;
                 return Post.updateOne({'postId': args.postId}, {'dislikes': dislikes,  $push: {dislikedBy: args.username}});
@@ -233,6 +242,9 @@ const Mutation = new GraphQLObjectType({
                 postId: { type: new GraphQLNonNull(GraphQLString) }
             },
             async resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 return Post.deleteOne({'postId': args.postId});
             }
         },
@@ -267,6 +279,9 @@ const Mutation = new GraphQLObjectType({
                 requestId: { type: GraphQLString }
             },
             async resolve(parent, args, req) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 let payload = await FriendRequest.updateOne({'requestId': args.requestId}, {'done': true});
                 return payload;
             }
@@ -278,6 +293,9 @@ const Mutation = new GraphQLObjectType({
                 userSecond : { type: GraphQLString },
             },
             async resolve(parent, args) {
+                if (!req.isAuth) {
+                    throw new Error('Not Authenticated.');
+                }
                 let user1 = await User.updateOne({'username': args.userOne}, { $push: {friends: args.userSecond}});
                 let user2 = await User.updateOne({'username': args.userSecond}, { $push: {friends: args.userOne}});
                 let list = [user1, user2];
