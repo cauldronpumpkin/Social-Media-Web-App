@@ -3,6 +3,7 @@ const _ = require('lodash');
 const Post = require('../models/Post');
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
+const InfoNoti = require('../models/infoNotification');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET = "socialmediawebappproject";
@@ -42,13 +43,14 @@ const PostType = new GraphQLObjectType({
         dislikes   : { type: GraphQLInt },
         caption    : { type: GraphQLString },
         postId     : { type: GraphQLString },
+        madeOn     : { type: GraphQLDateTime },
         likedBy    : { type: GraphQLList(GraphQLString) },
         dislikedBy : { type: GraphQLList(GraphQLString) },
     })
 });
 
-const FriendRequestNotificationType = new GraphQLObjectType({
-    name: 'FriendRequestNotificationType',
+const NotificationType = new GraphQLObjectType({
+    name: 'NotificationType',
     fields: () => ({
         toUser     : { type: GraphQLString },
         fromUser   : { type: GraphQLString },
@@ -81,7 +83,6 @@ const TokenType = new GraphQLObjectType({
 // Root Query
 const RootQuery = new GraphQLObjectType({
     name: 'RootQueryType',
-    // options: { fetchPolicy: "network-only" },
     defaultOptions: {
         watchQuery: {
           fetchPolicy: 'network-only',
@@ -110,12 +111,9 @@ const RootQuery = new GraphQLObjectType({
             }
         },
         getNotifications: {
-            type: new GraphQLList(FriendRequestNotificationType),
+            type: new GraphQLList(NotificationType),
             args: { username: { type: GraphQLString }},
             resolve(parent, args, req) {
-                if (!req.isAuth) {
-                    throw new Error('Not Authenticated.');
-                }
                 return FriendRequest.find({'toUser': args.username});
             }
         }
@@ -172,10 +170,15 @@ const Mutation = new GraphQLObjectType({
                     likes     : 0,
                     dislikes  : 0,
                     postId    : Id,
+                    madeOn    : new Date(),
                     likedBy   : ['admin'],
                     dislikedBy: ['admin']
                 });
-                return post.save();
+                let payload = await post.save();
+                await pubsub.publish('NEWPOST', {
+                    payload,
+                });
+                return payload;
             }
         },
         loginUser: {
@@ -234,7 +237,7 @@ const Mutation = new GraphQLObjectType({
             }
         },
         sendFriendRequest: {
-            type: FriendRequestNotificationType,
+            type: NotificationType,
             args: {
                 toUser    : { type: GraphQLString },
                 fromUser  : { type: GraphQLString },
@@ -259,7 +262,7 @@ const Mutation = new GraphQLObjectType({
             }
         },
         requestDone: {
-            type: FriendRequestNotificationType,
+            type: NotificationType,
             args: {
                 requestId: { type: GraphQLString }
             },
@@ -288,7 +291,7 @@ const Subscription = new GraphQLObjectType({
     name: 'Subscribe',
     fields: {
         FriendRequestNotification: {
-            type: FriendRequestNotificationType,
+            type: NotificationType,
             args: {
                 username: { type: new GraphQLNonNull(GraphQLString) },
             },
@@ -298,8 +301,23 @@ const Subscription = new GraphQLObjectType({
                   return (payload.payload.toUser == args.username);
                 }
             ),
-            async resolve(note, args) {
-                return note.payload;
+            async resolve(payload, args) {
+                return payload.payload;
+            }
+        },
+        newPostByFriend: {
+            type: PostType,
+            args: {
+                friends: { type: new GraphQLList(GraphQLString) }
+            },
+            subscribe: withFilter(
+                () => pubsub.asyncIterator('NEWPOST'),
+                (payload, args) => {
+                  return (args.friends.includes(payload.payload.username));
+                }
+            ),
+            async resolve(payload, args) {
+                return payload.payload;
             }
         }
     }

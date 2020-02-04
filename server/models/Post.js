@@ -8,7 +8,7 @@ const postSchema = new Schema({
     dislikes   : Number,
     caption    : String,
     postId     : String,
-    date       : Date,
+    madeOn     : Date,
     likedBy    : [String],
     dislikedBy : [String] 
 });

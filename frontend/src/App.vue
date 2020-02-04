@@ -4,10 +4,11 @@
     <v-toolbar
     style="background-color: #00acee;font-family: monospace;"
     dark
-  >
-    <v-btn text v-on:click="goHome()"><v-toolbar-title>MyBook</v-toolbar-title></v-btn>
+    app 
+    fixed
+    >
+    <v-btn text v-on:click="goHome()"><v-toolbar-title>FaceGram</v-toolbar-title></v-btn>
     <v-btn text style="width: 100px; margin-left: 13px;" v-on:click="listAllUsers()">Search user</v-btn>
-    <!-- <v-btn icon v-on:click="goToProfile()"> <v-icon> mdi-arrow-right-circle </v-icon></v-btn> -->
     <v-spacer></v-spacer>
 
     <v-toolbar-items class="hidden-sm-and-down">
@@ -48,7 +49,8 @@
     </v-toolbar-items>
     <v-btn icon large v-on:click="logout()"><v-icon>mdi-export</v-icon></v-btn>
   </v-toolbar>
-   <v-dialog v-model="dialog" id="dialog" max-width="200px" style="font-family: sans;">
+  <v-content>
+   <v-dialog v-model="dialog" id="dialog" max-width="240px" style="font-family: sans;">
      <v-btn icon @click="dialog = false"><v-icon>mdi-close-circle</v-icon></v-btn>
      <v-text-field style="width: 170px; margin-top: -10px; margin-left: 15px;" v-on:keyup="searchUser()"
         label="Search..." v-model="requestedUser" v-on:click="listAllUsers()">
@@ -60,22 +62,53 @@
         </v-card>
     </v-dialog>
 
-    <v-dialog v-model="dialog2" id="dialog" style="font-family: monospace;" max-width="690px">
+    <v-dialog v-model="dialog2" id="dialog" style="font-family: monospace;" max-width="750px">
       <v-card style="height: 300px;">
         <v-btn icon @click="dialog2 = false"><v-icon>mdi-close-circle</v-icon></v-btn>
         <v-divider />
         <v-list v-for="(notification, index) in listOfNotifications" :key="notification.requestId">
-          <v-card v-if="!notification.done" style="margin-left: 15px;margin-bottom: 6px; background-color:#00acee; width: 420px; height: 50px;">
+          <v-card v-if="!notification.done" style="margin-left: 15px;margin-bottom: 6px; background-color:#00acee; width: 719px; height: 50px;">
             <v-list-item>
-              <pre><b v-on:click="goToProfile(notification.fromUserObj)" id="notification">{{ notification.fromUserObj.name }}</b> wishes to be Your Friend      </pre>
-              <v-btn v-on:click="acceptRequest(index)" :loading="acceptLoading" style="background-color: #29f089;height: 50px; margin-left: 12px" text><v-icon small>mdi-account-check</v-icon> Accept</v-btn>
-              <v-btn v-on:click="clearRequest(index)" style="background-color: #ed4c07;height: 50px;margin-left: 10px;" text><v-icon small>mdi-delete</v-icon> Done</v-btn>
+              <div style="width: 600px;"><pre><b v-on:click="goToProfile(notification.fromUserObj)" id="notification">{{ notification.fromUserObj.name }}</b> wishes to be Your Friend</pre></div>
+              <v-btn v-on:click="acceptRequest(index)" :loading="acceptLoading" style="background-color: #29f089;height: 35px; margin-right: 10px;margin-left: 40px" text><v-icon small>mdi-account-check</v-icon> Accept</v-btn>
+              <v-btn v-on:click="clearRequest(index)" style="background-color: #ed4c07;height: 35px;" text><v-icon small>mdi-delete</v-icon> Done</v-btn>
             </v-list-item>
           </v-card>
         </v-list>
       </v-card>
     </v-dialog>
-  <router-view />
+  </v-content>
+      <router-view />
+      <v-footer
+        padless
+        style="margin-top: 340px;"
+      >
+    <v-card
+      flat
+      tile
+      style="background-color: #00acee; width: 10000px;"
+      class="indigo lighten-1 white--text text-center"
+    >
+      <v-card-text style="margin-left: 480px;">
+        <v-btn
+          v-for="icon in icons"
+          :key="icon"
+          v-on:click="linkToMe(icon)"
+          class="mx-4 white--text"
+          style="margin-left: 120px;"
+          icon
+        >
+          <v-icon size="34px">{{ icon }}</v-icon>
+        </v-btn>
+      </v-card-text>
+
+      <v-card-text class="white--text pt-0" style="font-family: sans; font-size: 15px; margin-top: -20px;">
+        <center>This Website Was Created By Kshitiz Jain. To know more about this project refer to Github.</center>
+      </v-card-text>
+
+      <v-divider></v-divider>
+    </v-card>
+  </v-footer>
   <!-- </v-app> -->
 </div>
 </template>
@@ -90,13 +123,20 @@ export default {
     dialog2: false,
     users: [],
     requestedUser: "",
-    listOfNotifications: {},
+    listOfNotifications: [],
     acceptLoading: false,
-    newNotification: false
+    newNotification: false,
+    icons: [
+        'mdi-facebook',
+        'mdi-twitter',
+        'mdi-google-plus',
+        'mdi-github-circle',
+        'mdi-instagram',
+      ],
   }),
   apollo: {
    $subscribe: {
-     online_users: {
+     newNotification: {
        query: require('./graphql/getNotifications.gql'),
        variables: {
          username: localStorage.getItem('loggedUser'),
@@ -147,7 +187,8 @@ export default {
     logout() {
       localStorage.removeItem('apollo-token');
       localStorage.removeItem('loggedUser');
-      router.push('/')
+      router.push('/');
+      location.reload();
     },
     newpost() {
       router.push('/newpost');
@@ -171,6 +212,24 @@ export default {
           else { 
               x[i].style.display="inline";                  
           }
+      }
+    },
+    linkToMe(icon) {
+      switch(icon) {
+        case "mdi-instagram":
+          window.open('https://www.instagram.com/_ishu1201_/');
+          break;
+        case "mdi-facebook":
+          window.open('https://www.facebook.com/h.potter.357');
+          break;
+        case "mdi-twitter":
+          window.open('https://twitter.com/ishu35602253');
+          break;
+        case "mdi-google-plus":
+          window.open('https://aboutme.google.com/u/0/?referer=gplus');
+          break;
+        default:
+          window.open('https://github.com/cauldronpumpkin/Social-Media-Web-App');
       }
     },
     listAllUsers() {

@@ -28,14 +28,14 @@
 </template>
 
 <script>
-// import fire from '../firebase/index';
+// import fire from '../firebase/index'
 import firebase from 'firebase/app';
 import 'firebase/firestore' ;
 import 'firebase/storage';
 
 export default {
     data: () => ({
-      listOfPosts: []
+      listOfPosts: [],
     }),
     async mounted() {
       var res = await this.$apollo.query({
@@ -43,8 +43,9 @@ export default {
           variables: {
               username: localStorage.getItem('loggedUser')
           }
-      })
+      });
       var listOfFriends = res.data.user.friends;
+
       for (let i = 0; i < listOfFriends.length; i++) {
         if (listOfFriends[i] == "" || listOfFriends[i] == "admin") {
           continue;
@@ -59,9 +60,9 @@ export default {
           this.listOfPosts = this.listOfPosts.concat(posts.data.userPosts);
         }
       }
-      // this.listOfPosts.sort(function(a, b){return b.time - a.time});
+      this.listOfPosts.sort(function(a, b){return new Date(b.madeOn) - new Date(a.madeOn)});
       let img = document.getElementsByClassName("postImage");
-      
+
       for (let i = 0; i < this.listOfPosts.length; i++) {
         this.listOfPosts[i].isLiked = this.listOfPosts[i].likedBy.includes(localStorage.getItem('loggedUser'));
         this.listOfPosts[i].isDisliked = this.listOfPosts[i].dislikedBy.includes(localStorage.getItem('loggedUser'));

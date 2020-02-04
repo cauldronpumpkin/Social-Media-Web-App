@@ -11,7 +11,7 @@ export default new Vuex.Store({
     },
     liked: false,
     disliked: false,
-    listOfPosts: {}
+    listOfPosts: []
   },
   getters: {
     selectedPost(state) {
@@ -53,7 +53,7 @@ export default new Vuex.Store({
     },
     listOfPosts({commit}, listOfPosts) {
       commit("LIST_POST", listOfPosts);
-    }
+    },
   },
   modules: {
   }

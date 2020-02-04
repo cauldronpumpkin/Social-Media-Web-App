@@ -1,5 +1,5 @@
-query getPosts($username: String!) {
-    userPosts (username: $username) {
+subscription ($friends: [String]) {
+    newPostByFriend (friends: $friends) {
         username
         likes
         dislikes
